@@ -11,10 +11,7 @@ class MyDB extends SQLite3 {
  }
  
  $db = new MyDB();
- if(!$db) {
-	echo $db->lastErrorMsg();
-	exit();
- }
+ 
 
 
 $app = new \Slim\App;
@@ -54,6 +51,43 @@ $app->get(
 	}
 	$db->close();
         return $response->withJson($participants);
+    }
+);
+
+
+$app->post(
+    '/api/participants',
+    function (Request $request, Response $response, array $args) use ($db) {
+		
+		$requestData = $request->getParsedBody();
+		
+		if (!isset($requestData['firstname']) || !isset($requestData['lastname'])) {
+			return $response->withStatus(418)->withJson(['message' => 'Lastname and firstname are required']);
+		}
+		
+		$sql = "INSERT INTO participant (firstname, lastname) VALUES('$requestData[firstname]', '$requestData[lastname]');";
+		$db->query($sql);
+        return $response->withStatus(201);
+    }
+);
+
+
+
+
+
+
+
+$app->get(
+    '/api/participants/{id}',
+    function (Request $request, Response $response, array $args) use ($db) {
+        $sql = "SELECT * FROM participant WHERE id = $args[id]"; // beware! SQL Injection Attack
+        $ret = $db->query($sql);
+        $participant = $ret->fetchArray(SQLITE3_ASSOC);
+        if ($participant) {
+            return $response->withJson($participant);
+        } else {
+            return $response->withStatus(404)->withJson(['error' => 'Such participant does not exist.']);
+        }
     }
 );
 
